@@ -1,0 +1,24 @@
+{
+  "development": {
+    "username": "postgres",
+    "password": "postgres",
+    "database": "vuttr_db",
+    "host": "127.0.0.1",
+    "dialect": "postgres",
+    "pool": {
+      "min": 1,
+      "max": 5
+    }
+  },
+  "production": {
+    "username": "postgres",
+    "password": "postgres",
+    "database": "vuttr_db",
+    "host": "127.0.0.1",
+    "dialect": "postgres",
+    "pool": {
+      "min": 5,
+      "max": 10
+    }
+  }
+}

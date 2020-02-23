@@ -1,0 +1,94 @@
+{
+    "openapi": "3.0.2",
+    "info": {
+        "version": "1.0.0",
+        "title": "VUTTR",
+        "description": "Very Useful Tools To Remember API",
+        "contact": {
+            "name": "Ederson Abreu",
+            "email": "ederson@esabreu.eti.br",
+            "url": "https://esabreu.eti.br"
+        },
+        "license": { "name": "MIT License", "url": "https://www.mit.edu/~amini/LICENSE.md" }
+    },
+    "servers": [
+        { "url": "http://localhost:3000/", "description": "Local server" },
+        { "url": "https://vuttr-api.herokuapp.com", "description": "Heroku Cloud" }
+    ],
+    "tags": [
+        { "name": "Users" },
+        { "name": "Tools" }
+    ],
+    "paths": {
+        "/users": {
+            "post": {
+                "tags": [ "Users" ],
+                "description": "add a new User",
+                "operationId": "addUser",
+                "parameters": [],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "user": {
+                                    "firstName": "string",
+                                    "lastName": "string",
+                                    "email": "string",
+                                    "password": "string"
+                                }
+                            },
+                            "example": {
+                                "firstName": "Ederson",
+                                "lastName": "Abreu",
+                                "email": "ederson@esabreu.eti.br",
+                                "password": "1234"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "user": {
+                                        "id": "integer",
+                                        "firstName": "string",
+                                        "lastName": "string",
+                                        "email": "string",
+                                        "createdAt": "date",
+                                        "updatedAt": "date"
+                                    }
+                                },
+                                "example": {
+                                    "id": 1,
+                                    "firstName": "Ederson",
+                                    "lastName": "Abreu",
+                                    "email": "ederson@esabreu.eti.br",
+                                    "createdAt": "2020-01-01 00:00:00",
+                                    "updatedAt": "2020-01-01 00:00:00"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Missing parameters",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                },
+                                "example": {
+                                    "message": "companyId is missing",
+                                    "internal_code": "missing_parameters"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
