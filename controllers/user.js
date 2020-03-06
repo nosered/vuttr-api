@@ -3,6 +3,7 @@ const bcrypt = require('bcryptjs');
 const Op = require('sequelize').Op;
 
 const User = require('../models/user');
+const { UserAlreadyExistsError } = require('../errors/errors');
 
 exports.getUsers = (request, response, next) => {
     User.findAll({ where: { email: { [Op.iLike]: request.query.email ? `${request.query.email}` : ''} } })
@@ -13,24 +14,21 @@ exports.getUsers = (request, response, next) => {
         response.status(200).json(users);
     })
     .catch(error => {
-        console.log(error);
-        response.status(500).json(error);
+        next(error.message);
+        response.status(500).json({ statusCode: 500, message: 'INTERNAL SERVER ERROR' });
     });
 }
 
 exports.postUsers = (request, response, next) => {
-    const errors = validationResult(request);
-    if(!errors.isEmpty()) {
-        return response.status(400).json(errors);
+    const result = validationResult(request);
+    if(!result.isEmpty()) {
+        return response.status(400).json({ statusCode: 400, message: 'BAD REQUEST', errors: result.errors });
     }
     
     User.findOne({ where: { email: request.body.email } })
     .then(user => {
-        return user;
-    })
-    .then(user => {
         if(user) {
-            throw Error('User already exists');
+            throw new UserAlreadyExistsError();
         }
 
         User.create({
@@ -42,10 +40,13 @@ exports.postUsers = (request, response, next) => {
         .then(user => {
             delete user.dataValues.password;
             response.status(201).json(user);
-        })
+        });
+    })
+    .catch(UserAlreadyExistsError, error => {
+        response.status(409).json({ statusCode: 409, message: error.message });
     })
     .catch(error => {
-        console.log(error);
-        response.status(500).json(error);
+        next(error.message);
+        response.status(500).json({ statusCode: 500, message: 'INTERNAL SERVER ERROR' });
     });
 }

@@ -19,6 +19,7 @@
     "pool": {
       "min": 5,
       "max": 10
-    }
+    },
+    "logging": false
   }
 }

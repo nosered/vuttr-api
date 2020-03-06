@@ -2,6 +2,7 @@ const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 
 const User = require('../models/user');
+const { InvalidUserError, InvalidTokenError } = require('../errors/errors');
 
 const CLIENT_ID = 'webapp';
 const CLIENT_SECRET = 'webapp';
@@ -17,16 +18,19 @@ const validateClient = (encodedClientCredentials) => {
 }
 
 const findAndValidateUser = (username, password) => {
+    let validUser;
     return User.findOne({ where: { email: username } })
     .then(user => {
         if(!user) { 
             return null;
         }
+        validUser = user;
         return bcrypt.compare(password, user.dataValues.password);
     })
     .then(passwordMatch => {
         if(passwordMatch) {
             return {
+                id: validUser.id,
                 email: username
             }
         } else {
@@ -34,7 +38,6 @@ const findAndValidateUser = (username, password) => {
         }
     })
     .catch(error => {
-        console.log(error);
         return null;
     });
 }
@@ -65,7 +68,7 @@ exports.getToken = (request, response, next) => {
     let authorizationHeader = request.get('Authorization');
 
     if(!authorizationHeader) {
-        return response.status(401).send('INVALID CLIENT CREDENTIALS');
+        return response.status(401).json({ statusCode: 401, message: 'UNAUTHORIZED', errors: 'INVALID CLIENT CREDENTIALS' });
     }
 
     authorizationHeader = authorizationHeader.split(' ');
@@ -73,49 +76,52 @@ exports.getToken = (request, response, next) => {
     const encodedClientCredentials = authorizationHeader[1];
 
     if(authorizationType !== 'Basic') {
-        return response.status(401).send('INVALID CLIENT CREDENTIALS');
+        return response.status(401).json({ statusCode: 401, message: 'UNAUTHORIZED', errors: 'INVALID CLIENT CREDENTIALS' });
     }
 
     if(!validateClient(encodedClientCredentials)) {
-        return response.status(401).send('INVALID CLIENT CREDENTIALS');
+        return response.status(401).json({ statusCode: 401, message: 'UNAUTHORIZED', errors: 'INVALID CLIENT CREDENTIALS' });
     }
 
-    const grantType = request.query.grant_type;
+    const grantType = request.body.grant_type;
     if(grantType === 'password') {
         const username = request.body.username;
         const password = request.body.password;
 
         if(!username || !password) {
-            return response.status(401).send('INVALID USERNAME OR PASSWORD');
+            return response.status(401).json({ statusCode: 401, message: 'UNAUTHORIZED', errors: 'INVALID USERNAME OR PASSWORD' });
         }
 
         let user, accessToken, refreshToken;
         findAndValidateUser(username, password)
         .then(userFind => {
             if(!userFind) {
-                throw new Error('401');
+                throw new InvalidUserError();
             }
             user = userFind;
             return generateJsonWebToken({ email: userFind.email, userId: userFind.id }, ACCESS_TOKEN_KEY, { algorithm: 'HS256', expiresIn: '1h' });
         })
         .then((token) => {
             accessToken = token;
-            return generateJsonWebToken({ email: user.email, userId: userFind.id }, REFRESH_TOKEN_KEY, { algorithm: 'HS256', expiresIn: '24h' });
+            return generateJsonWebToken({ email: user.email, userId: user.id }, REFRESH_TOKEN_KEY, { algorithm: 'HS256', expiresIn: '24h' });
         })
         .then((token) => {
             refreshToken = token;
             response.cookie('refresh_token', refreshToken, { maxAge: 1000 * 60 * 60 * 24, httpOnly: true });
-            return response.status(200).send({ accessToken: accessToken, expiresIn: 60 * 60 });
+            return response.status(200).json({ accessToken: accessToken, expiresIn: 60 * 60 });
+        })
+        .catch(InvalidUserError, error => {
+            return response.status(401).json({ statusCode: 401, message: 'UNAUTHORIZED', errors: error.message });
         })
         .catch(error => {
-            console.log(error);
-            return response.status(401).send('INVALID USERNAME OR PASSWORD');
+            next(error.message);
+            return response.status(500).json({ statusCode: 500, message: 'INTERNAL SERVER ERROR' });
         });
     } else if(grantType === 'refresh_token') {
         const cookieRefreshToken = request.cookies['refresh_token'];
 
         if(!cookieRefreshToken) {
-            return response.status(401).send('INVALID TOKEN');
+            return response.status(401).json({ statusCode: 401, message: 'UNAUTHORIZED', errors: 'INVALID TOKEN' });
         }
 
         let payload, accessToken, refreshToken;
@@ -131,16 +137,19 @@ exports.getToken = (request, response, next) => {
         .then(token => {
             refreshToken = token;
             response.cookie('refresh_token', refreshToken, { maxAge: 1000 * 60 * 60 * 24, httpOnly: true });
-            return response.status(200).send({ accessToken: accessToken, expiresIn: 60 * 60 });
+            return response.status(200).json({ accessToken: accessToken, expiresIn: 60 * 60 });
+        })
+        .catch(InvalidTokenError, error => {
+            return response.status(401).json({ statusCode: 401, message: 'UNAUTHORIZED', errors: error.message });
         })
         .catch((error) => {
-            console.log(error);
-            return response.status(401).send('INVALID TOKEN');
+            next(error.message);
+            return response.status(500).json({ statusCode: 500, message: 'INTERNAL SERVER ERROR' });
         });
     } else if(grantType === 'authorization_code' || grantType === 'client_credentials') {
-        return response.status(406).send('GRANT TYPE NOT ACCEPTABLE');
+        return response.status(406).json({ statusCode: 406, message: 'NOT ACCEPTABLE', errors: 'GRANT TYPE NOT ACCEPTABLE' });
     } else {
-        return response.status(400).send('INVALID GRANT TYPE');
+        return response.status(400).json({ statusCode: 400, message: 'BAD REQUEST', errors: 'INVALID GRANT TYPE' });
     }
 }
 
@@ -148,7 +157,7 @@ exports.authenticate = (request, response, next) => {
     let authorizationHeader = request.get('Authorization');
 
     if(!authorizationHeader) {
-        return response.status(401).send('TOKEN IS MISSING');
+        return response.status(401).json({ statusCode: 401, message: 'UNAUTHORIZED', errors: 'INVALID TOKEN' });
     }
 
     authorizationHeader = authorizationHeader.split(' ');
@@ -156,18 +165,17 @@ exports.authenticate = (request, response, next) => {
     const accessToken = authorizationHeader[1];
 
     if(authorizationType !== 'Bearer') {
-        return response.status(401).send('INVALID TOKEN');
+        return response.status(401).json({ statusCode: 401, message: 'UNAUTHORIZED', errors: 'INVALID TOKEN' });
     }
 
-    try {
-        const payload = jwt.verify(accessToken, ACCESS_TOKEN_KEY, { algorithms: ['HS256'] });
+    validateJsonWebToken(accessToken, ACCESS_TOKEN_KEY, { algorithm: ['HS256'] })
+    .then(payload => {
         request.tokenPayload = payload;
-    } catch(error) {
-        console.log(error);
-        return response.status(401).send('INVALID TOKEN');
-    }
-
-    next();
+        next();
+    })
+    .catch(error => {
+        return response.status(401).json({ statusCode: 401, message: 'UNAUTHORIZED', errors: 'INVALID TOKEN' });
+    });
 }
 
 exports.authorize = () => {
@@ -176,5 +184,5 @@ exports.authorize = () => {
 
 exports.revokeToken = (request, response, next) => {
     response.clearCookie('refresh_token');
-    response.status(200).send();
+    response.status(204).json({ statusCode: 204, message: 'NO CONTENT' });
 }

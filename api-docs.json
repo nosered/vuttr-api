@@ -16,13 +16,74 @@
         { "url": "https://vuttr-api.herokuapp.com", "description": "Heroku Cloud" }
     ],
     "tags": [
-        { "name": "Users" },
-        { "name": "Tools" }
+        { "name": "AUTH" },
+        { "name": "USERS" },
+        { "name": "TOOLS" }
     ],
     "paths": {
+        "/auth/token": {
+            "post": {
+                "tags": [ "AUTH" ],
+                "description": "Get Authentication Tokens",
+                "operationId": "getToken",
+                "security": [
+                    { "basic": [] }
+                ],
+                "requestBody": {
+                    "description": "When use refresh_token to get a new access_token no need fill username and password",
+                    "content": {
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UserCredentials"
+                            },
+                            "example": {
+                                "grant_type": "password",
+                                "username": "edersonabreu@email.com",
+                                "password": "1234"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "The refresh token is returned in a HttpOnly Cookie named `refresh_token`.",
+                        "headers": {
+                            "Set-Cookie": {
+                                "schema": {
+                                    "type": "string",
+                                    "example": "refresh_token=eyJhbGciOiJIUzI1NiIsInR56Ikp.eyJlbWFpbCI6InN5c2FkbWluQGVtYWlsLmNvsImlhTU4MzE2OTI1NywiZXhwIjoxNTgzMjU1NjU3fQ.G4WZ1QzQX2o9GO97niHsWiy4mTUlg-t8Enk; path=/; domain=localhost; HttpOnly; Expires=Tue, 03 Mar 2020 17:14:17 GMT;"
+                                }
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/UserGET"
+                                },
+                                "example": {
+                                    "access_token": "eyJhbGciOiJIUzIIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6InN5kbWluQGVtYWlsLmNvbSIsImlhdCI6MTU4MzE2OTI1NywiZXhwIjoxNTgzMTcyODU3fQ.SXkApjUwYnhHigEAJSbIesFf2NLq65hTSkozveXY",
+                                    "expires_in": 3600
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "tags": [ "AUTH" ],
+                "description": "Revoke refresh token from HttpOnly Cookie",
+                "operationId": "revokeToken",
+                "responses": {
+                    "204": {
+                        "description": "The HttpOnly cookie `refresh_token` is removed."
+                    }
+                }
+            }
+        },
         "/users": {
             "post": {
-                "tags": [ "Users" ],
+                "tags": [ "USERS" ],
                 "description": "add a new User",
                 "operationId": "addUser",
                 "parameters": [],
@@ -30,17 +91,12 @@
                     "content": {
                         "application/json": {
                             "schema": {
-                                "user": {
-                                    "firstName": "string",
-                                    "lastName": "string",
-                                    "email": "string",
-                                    "password": "string"
-                                }
+                                "$ref": "#/components/schemas/UserPOST"
                             },
                             "example": {
                                 "firstName": "Ederson",
                                 "lastName": "Abreu",
-                                "email": "ederson@esabreu.eti.br",
+                                "email": "edersonabreu@email.com",
                                 "password": "1234"
                             }
                         }
@@ -53,20 +109,13 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "user": {
-                                        "id": "integer",
-                                        "firstName": "string",
-                                        "lastName": "string",
-                                        "email": "string",
-                                        "createdAt": "date",
-                                        "updatedAt": "date"
-                                    }
+                                    "$ref": "#/components/schemas/UserGET"
                                 },
                                 "example": {
                                     "id": 1,
                                     "firstName": "Ederson",
                                     "lastName": "Abreu",
-                                    "email": "ederson@esabreu.eti.br",
+                                    "email": "edersonabreu@email.com",
                                     "createdAt": "2020-01-01 00:00:00",
                                     "updatedAt": "2020-01-01 00:00:00"
                                 }
@@ -86,6 +135,158 @@
                                 }
                             }
                         }
+                    }
+                }
+            }
+        },
+        "/tools": {
+            "get": {
+                "tags": [ "TOOLS" ],
+                "description": "list tools",
+                "operationId": "listTools",
+                "parameters": [
+                    { "in": "query", "name": "tag", "schema": { "type": "string" }, "required": false  }
+                ],
+                "security": [
+                    { "bearer": [] }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ToolGET"
+                                },
+                                "example": {
+                                    "id": 1,
+                                    "title": "Ederson",
+                                    "link": "http://github.com/nosered",
+                                    "description": "very useful tool",
+                                    "tags": []
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "components": {
+        "securitySchemes": {
+            "basic": {
+                "type": "http",
+                "scheme": "basic"
+            },
+            "bearer": {
+                "type": "http",
+                "scheme": "bearer"
+            }
+        },
+        "schemas": {
+            "UserGET": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "example": 1234
+                    },
+                    "firstName": {
+                        "type": "string",
+                        "example": "Ederson"
+                    },
+                    "lastName": {
+                        "type": "string",
+                        "example": "Abreu"
+                    },
+                    "email": {
+                        "type": "string",
+                        "example": "edersonabreu@email.com"
+                    },
+                    "createdAt": {
+                        "type": "string",
+                        "example": "2020-01-01 00:00:00"
+                    },
+                    "updatedAt": {
+                        "type": "string",
+                        "example": "2020-01-01 00:00:00"
+                    }
+                }
+            },
+            "UserPOST": {
+                "type": "object",
+                "properties": {
+                    "firstName": {
+                        "type": "string",
+                        "example": "Ederson"
+                    },
+                    "lastName": {
+                        "type": "string",
+                        "example": "Abreu"
+                    },
+                    "email": {
+                        "type": "string",
+                        "example": "edersonabreu@email.com"
+                    },
+                    "password": {
+                        "type": "string",
+                        "example": "1234"
+                    }
+                },
+                "required": [ "firstName", "lastName", "email", "password" ]
+            },
+            "ToolGET": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "example": 1234
+                    },
+                    "title": {
+                        "type": "string",
+                        "example": "Ederson"
+                    },
+                    "link": {
+                        "type": "string",
+                        "example": "Abreu"
+                    },
+                    "description": {
+                        "type": "string",
+                        "example": "edersonabreu@email.com"
+                    },
+                    "tags": {
+                        "type": "array",
+                        "example": []
+                    }
+                }
+            },
+            "UserCredentials": {
+                "type": "object",
+                "properties": {
+                    "grant_type": {
+                        "type": "string",
+                        "enum": [ "password", "refresh_token" ],
+                        "default": "password"
+                    },
+                    "username": {
+                        "type": "string",
+                        "example": "edersonabreu@email.com"
+                    },
+                    "password": {
+                        "type": "string",
+                        "example": "1234"
+                    }
+                },
+                "required": [ "grant_type" ]
+            },
+            "Error": {
+                "type": "object",
+                "properties": {
+                    "message": {
+                        "type": "string"
+                    },
+                    "internal_code": {
+                        "type": "string"
                     }
                 }
             }
