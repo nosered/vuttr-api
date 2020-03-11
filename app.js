@@ -8,6 +8,7 @@ const cookieParser = require('cookie-parser');
 const winston = require('winston');
 const expressWinston = require('express-winston');
 const helmet = require('helmet');
+const compression = require('compression');
 const Umzug = require('umzug');
 
 const authRoutes = require('./routes/auth');
@@ -22,6 +23,7 @@ const expressApp = express();
 const umzug = new Umzug(umzugConfig);
 
 expressApp.use(helmet());
+expressApp.use(compression());
 expressApp.use(corsFilter);
 expressApp.use(cookieParser());
 expressApp.use(bodyParser.json());
