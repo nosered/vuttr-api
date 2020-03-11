@@ -1,23 +1,8 @@
 const { validationResult } = require('express-validator/check');
 const bcrypt = require('bcryptjs');
-const Op = require('sequelize').Op;
 
 const User = require('../models/user');
 const { UserAlreadyExistsError } = require('../errors/errors');
-
-exports.getUsers = (request, response, next) => {
-    User.findAll({ where: { email: { [Op.iLike]: request.query.email ? `${request.query.email}` : ''} } })
-    .then(users => {
-        for(user of users) {
-            delete user.dataValues.password;
-        }
-        response.status(200).json(users);
-    })
-    .catch(error => {
-        next(error.message);
-        response.status(500).json({ statusCode: 500, message: 'INTERNAL SERVER ERROR' });
-    });
-}
 
 exports.postUsers = (request, response, next) => {
     const result = validationResult(request);

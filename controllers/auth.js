@@ -17,31 +17,6 @@ const validateClient = (encodedClientCredentials) => {
     return false;
 }
 
-const findAndValidateUser = (username, password) => {
-    let validUser;
-    return User.findOne({ where: { email: username } })
-    .then(user => {
-        if(!user) { 
-            return null;
-        }
-        validUser = user;
-        return bcrypt.compare(password, user.dataValues.password);
-    })
-    .then(passwordMatch => {
-        if(passwordMatch) {
-            return {
-                id: validUser.id,
-                email: username
-            }
-        } else {
-            return null;
-        }
-    })
-    .catch(error => {
-        return null;
-    });
-}
-
 const generateJsonWebToken = (payload, secretKey, options) => {
     return new Promise((resolve, reject) => {
         try {
@@ -64,30 +39,12 @@ const validateJsonWebToken = (token, secretKey, options) => {
     });
 }
 
-/**
-* Function that returns the ACCESS_TOKEN and REFRESH_TOKEN.
-*/
 exports.getToken = (request, response, next) => {
-    let authorizationHeader = request.get('Authorization');
-
-    if(!authorizationHeader) {
-        return response.status(401).json({ statusCode: 401, message: 'UNAUTHORIZED', errors: 'INVALID CLIENT CREDENTIALS' });
-    }
-
-    authorizationHeader = authorizationHeader.split(' ');
-    const authorizationType = authorizationHeader[0];
-    const encodedClientCredentials = authorizationHeader[1];
-
-    if(authorizationType !== 'Basic') {
-        return response.status(401).json({ statusCode: 401, message: 'UNAUTHORIZED', errors: 'INVALID CLIENT CREDENTIALS' });
-    }
-
-    if(!validateClient(encodedClientCredentials)) {
-        return response.status(401).json({ statusCode: 401, message: 'UNAUTHORIZED', errors: 'INVALID CLIENT CREDENTIALS' });
-    }
 
     const grantType = request.body.grant_type;
+
     if(grantType === 'password') {
+
         const username = request.body.username;
         const password = request.body.password;
 
@@ -95,18 +52,27 @@ exports.getToken = (request, response, next) => {
             return response.status(401).json({ statusCode: 401, message: 'UNAUTHORIZED', errors: 'INVALID USERNAME OR PASSWORD' });
         }
 
-        let user, accessToken, refreshToken;
-        findAndValidateUser(username, password)
-        .then(userFind => {
-            if(!userFind) {
+        let authUser, accessToken, refreshToken;
+
+        User.findOne({ where: { email: username } })
+        .then(user => {
+            if(!user) {
                 throw new InvalidUserError();
             }
-            user = userFind;
-            return generateJsonWebToken({ email: userFind.email, userId: userFind.id }, ACCESS_TOKEN_KEY, { algorithm: 'HS256', expiresIn: '1h' });
+
+            authUser = user;
+            return bcrypt.compare(password, user.dataValues.password);
+        })
+        .then(passwordMatch => {
+            if(!passwordMatch) {
+                throw new InvalidUserError();
+            }
+            
+            return generateJsonWebToken({ email: authUser.email, userId: authUser.id }, ACCESS_TOKEN_KEY, { algorithm: 'HS256', expiresIn: '1h' });
         })
         .then((token) => {
             accessToken = token;
-            return generateJsonWebToken({ email: user.email, userId: user.id }, REFRESH_TOKEN_KEY, { algorithm: 'HS256', expiresIn: '24h' });
+            return generateJsonWebToken({ email: authUser.email, userId: authUser.id }, REFRESH_TOKEN_KEY, { algorithm: 'HS256', expiresIn: '24h' });
         })
         .then((token) => {
             refreshToken = token;
@@ -120,7 +86,9 @@ exports.getToken = (request, response, next) => {
             next(error.message);
             return response.status(500).json({ statusCode: 500, message: 'INTERNAL SERVER ERROR' });
         });
+
     } else if(grantType === 'refresh_token') {
+
         const cookieRefreshToken = request.cookies['refresh_token'];
 
         if(!cookieRefreshToken) {
@@ -149,6 +117,7 @@ exports.getToken = (request, response, next) => {
             next(error.message);
             return response.status(500).json({ statusCode: 500, message: 'INTERNAL SERVER ERROR' });
         });
+
     } else if(grantType === 'authorization_code' || grantType === 'client_credentials') {
         return response.status(406).json({ statusCode: 406, message: 'NOT ACCEPTABLE', errors: 'GRANT TYPE NOT ACCEPTABLE' });
     } else {
@@ -156,7 +125,29 @@ exports.getToken = (request, response, next) => {
     }
 }
 
-exports.authenticate = (request, response, next) => {
+exports.authenticateClient = (request, response, next) => {
+    let authorizationHeader = request.get('Authorization');
+
+    if(!authorizationHeader) {
+        return response.status(401).json({ statusCode: 401, message: 'UNAUTHORIZED', errors: 'INVALID CLIENT CREDENTIALS' });
+    }
+
+    authorizationHeader = authorizationHeader.split(' ');
+    const authorizationType = authorizationHeader[0];
+    const encodedClientCredentials = authorizationHeader[1];
+
+    if(authorizationType !== 'Basic') {
+        return response.status(401).json({ statusCode: 401, message: 'UNAUTHORIZED', errors: 'INVALID CLIENT CREDENTIALS' });
+    }
+
+    if(!validateClient(encodedClientCredentials)) {
+        return response.status(401).json({ statusCode: 401, message: 'UNAUTHORIZED', errors: 'INVALID CLIENT CREDENTIALS' });
+    }
+
+    next();
+}
+
+exports.authenticateUser = (request, response, next) => {
     let authorizationHeader = request.get('Authorization');
 
     if(!authorizationHeader) {

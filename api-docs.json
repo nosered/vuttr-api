@@ -6,7 +6,7 @@
         "description": "Very Useful Tools To Remember API",
         "contact": {
             "name": "Ederson Abreu",
-            "email": "ederson@esabreu.eti.br",
+            "email": "edersonabreu@outlook.com",
             "url": "https://esabreu.eti.br"
         },
         "license": { "name": "MIT License", "url": "https://www.mit.edu/~amini/LICENSE.md" }
@@ -74,6 +74,9 @@
                 "tags": [ "AUTH" ],
                 "description": "Revoke refresh token from HttpOnly Cookie",
                 "operationId": "revokeToken",
+                "security": [
+                    { "basic": [] }
+                ],
                 "responses": {
                     "204": {
                         "description": "The HttpOnly cookie `refresh_token` is removed."
@@ -87,6 +90,9 @@
                 "description": "add a new User",
                 "operationId": "addUser",
                 "parameters": [],
+                "security": [
+                    { "basic": [] }
+                ],
                 "requestBody": {
                     "content": {
                         "application/json": {

@@ -48,7 +48,7 @@ expressApp.use(expressWinston.errorLogger({
 	format: winston.format.combine(
 		winston.format.timestamp({ format: 'DD/MM/YYYY HH:mm:ss' }),
 		winston.format.printf(info => {
-			return `[ ${info.level.toUpperCase()} ] [ ${info.timestamp} ] [ ${info.meta.req.method} ${info.meta.req.url} ]\nstack: ${info.meta.stack}\n${info.meta.error.parent.detail}\n\n`
+			return `[ ${info.level.toUpperCase()} ] [ ${info.timestamp} ] [ ${info.meta.req.method} ${info.meta.req.url} ]\nstack: ${info.meta.stack||''}\n${(info.meta.error.parent||{}).detail||''}\n\n`
 		})
 	),
 	transports: [
