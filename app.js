@@ -1,4 +1,5 @@
-const fs = require('fs');
+require('dotenv').config();
+// const fs = require('fs');
 const path = require('path');
 
 const express = require('express');
@@ -8,6 +9,7 @@ const bodyParser = require('body-parser');
 const cookieParser = require('cookie-parser');
 const winston = require('winston');
 const expressWinston = require('express-winston');
+const helmet = require('helmet');
 const Umzug = require('umzug');
 
 const authRoutes = require('./routes/auth');
@@ -18,6 +20,7 @@ const umzugConfig = require('./config/umzug-config');
 const corsFilter = require('./util/cors');
 const apiDocs = require(path.join(__dirname, 'api-docs.json'));
 
+const PORT = process.env.PORT || 3000;
 const expressApp = express();
 const umzug = new Umzug(umzugConfig);
 /*
@@ -30,6 +33,7 @@ const oauth2Server = new Oauth2Server({
   	allowExtendedTokenAttributes: true
 });
 */
+expressApp.use(helmet());
 expressApp.use(corsFilter);
 expressApp.use(cookieParser());
 expressApp.use(bodyParser.json());
@@ -42,7 +46,9 @@ expressApp.use(expressWinston.logger({
 	exitOnError: false,
 	format: winston.format.combine(
 		winston.format.timestamp({ format: 'DD/MM/YYYY HH:mm:ss' }),
-		winston.format.simple()
+		winston.format.printf(info => {
+			return `[ ${info.level.toUpperCase()} ] [ ${info.timestamp} ] [ ${info.meta.req.method} ${info.meta.req.url} ] statusCode: ${info.meta.res.statusCode}`
+		})
 	),
 	transports: [
 		new winston.transports.Console({ level: 'info' })
@@ -55,8 +61,9 @@ expressApp.use(expressWinston.errorLogger({
 	exitOnError: false,
 	format: winston.format.combine(
 		winston.format.timestamp({ format: 'DD/MM/YYYY HH:mm:ss' }),
-		// winston.format.printf(info => { console.log(info); return `[ ${info.timestamp} ] [ ${info.meta.req.method} ${info.meta.req.url} ] ${info.level.toUpperCase()}: ${info.meta.error}` }),
-		winston.format.json()
+		winston.format.printf(info => {
+			return `[ ${info.level.toUpperCase()} ] [ ${info.timestamp} ] [ ${info.meta.req.method} ${info.meta.req.url} ]\nstack: ${info.meta.stack}\n${info.meta.error.parent.detail}\n\n`
+		})
 	),
 	transports: [
 		new winston.transports.File({
@@ -71,7 +78,7 @@ expressApp.use((request, response, next) => {
 });
 
 umzug.up().then((migrations) => {
-	expressApp.listen(3000, () => {
-		console.log('Server is listening on port 3000...');
+	expressApp.listen(PORT, () => {
+		console.log(`Server is listening on port ${PORT}...`);
 	});
 });

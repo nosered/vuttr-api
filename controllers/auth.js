@@ -4,10 +4,10 @@ const bcrypt = require('bcryptjs');
 const User = require('../models/user');
 const { InvalidUserError, InvalidTokenError } = require('../errors/errors');
 
-const CLIENT_ID = 'webapp';
-const CLIENT_SECRET = 'webapp';
-const ACCESS_TOKEN_KEY = '4cc3sst0k3ns3cr3tk3y';
-const REFRESH_TOKEN_KEY = 'r3fr3sht0k3ns3cr3tk3y';
+const CLIENT_ID = process.env.APP_CLIENT_ID || 'webapp';
+const CLIENT_SECRET = process.env.APP_CLIENT_SECRET || 'webapp';
+const ACCESS_TOKEN_KEY = process.env.APP_ACCESS_TOKEN_KEY || '4cc3sst0k3ns3cr3tk3y';
+const REFRESH_TOKEN_KEY = process.env.APP_REFRESH_TOKEN_KEY || 'r3fr3sht0k3ns3cr3tk3y';
 
 const validateClient = (encodedClientCredentials) => {
     const clientCredentials = Buffer.from(encodedClientCredentials, 'base64').toString('ascii');
@@ -64,6 +64,9 @@ const validateJsonWebToken = (token, secretKey, options) => {
     });
 }
 
+/**
+* Function that returns the ACCESS_TOKEN and REFRESH_TOKEN.
+*/
 exports.getToken = (request, response, next) => {
     let authorizationHeader = request.get('Authorization');
 

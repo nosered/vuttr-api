@@ -4,33 +4,35 @@ const path = require('path');
 const Sequelize = require('sequelize');
 
 const basename  = path.basename(__filename);
-const env = process.env.NODE_ENV || 'development';
-const config = require(path.join(__dirname, '..', 'config', 'database-config.json'))[env];
-
 const models = {};
-
-let sequelize;
-if(config.use_env_variable) {
-  sequelize = new Sequelize(process.env[config.use_env_variable], config);
-} else {
-  sequelize = new Sequelize(config.database, config.username, config.password, config);
-}
+const sequelize = new Sequelize(
+    process.env.DB_NAME || 'vuttr_db',
+    process.env.DB_USERNAME || 'postgres',
+    process.env.DB_PASSWORD || 'postgres',
+    {
+        dialect: process.env.DB_DIALECT || 'postgres',
+        host: process.env.DB_HOST || '127.0.0.1',
+        logging: process.env.NODE_ENV !== 'production' && process.env.NODE_ENV !== 'prod',
+        pool: {
+            min: +process.env.DB_CONNECTION_POOL_MIN || 1,
+            max: +process.env.DB_CONNECTION_POOL_MAX || 5
+        }
+    }
+);
 
 // Call the associate functions from models
 fs
-  .readdirSync(__dirname)
-  .filter(file => {
-    return (file.indexOf('.') !== 0) && (file !== basename) && (file.slice(-3) === '.js');
-  })
-  .forEach(file => {
-    var model = sequelize['import'](path.join(__dirname, file));
+.readdirSync(__dirname)
+.filter(file => (file.indexOf('.') !== 0) && (file !== basename) && (file.slice(-3) === '.js'))
+.forEach(file => {
+    const model = sequelize['import'](path.join(__dirname, file));
     models[model.name] = model;
-  });
-
+});
+    
 Object.keys(models).forEach(modelName => {
-  if(models[modelName].associate) {
-    models[modelName].associate(models);
-  }
+    if(models[modelName].associate) {
+        models[modelName].associate(models);
+    }
 });
 
 module.exports = sequelize;

@@ -123,15 +123,52 @@
                         }
                     },
                     "400": {
-                        "description": "Missing parameters",
+                        "description": "Error",
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/Error"
+                                    "$ref": "#/components/schemas/Error400"
                                 },
                                 "example": {
-                                    "message": "companyId is missing",
-                                    "internal_code": "missing_parameters"
+                                    "statusCode": "400",
+                                    "message": "BAD REQUEST",
+                                    "errors": [
+                                        {
+                                            "value": "",
+                                            "msg": "Invalid value",
+                                            "param": "description",
+                                            "location": "body"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error4xx"
+                                },
+                                "example": {
+                                    "statusCode": "401",
+                                    "message": "UNAUTHORIZED",
+                                    "errors": "INVALID TOKEN"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error5xx"
+                                },
+                                "example": {
+                                    "statusCode": 500,
+                                    "message": "INTERNAL SERVER ERROR"
                                 }
                             }
                         }
@@ -156,14 +193,186 @@
                         "content": {
                             "application/json": {
                                 "schema": {
+                                    "$ref": "#/components/schemas/ToolsGET"
+                                },
+                                "example": [
+                                    {
+                                        "id": 1,
+                                        "title": "Notion",
+                                        "link": "https://notion.so",
+                                        "description": "All in one tool to organize teams and ideas. Write, plan, collaborate, and get organized.",
+                                        "tags": [
+                                            "organization",
+                                            "planning",
+                                            "collaboration",
+                                            "writing",
+                                            "calendar"
+                                        ]
+                                    },
+                                    {
+                                        "id": 2,
+                                        "title": "json-server",
+                                        "link": "https://github.com/typicode/json-server",
+                                        "description": "Fake REST API based on a json schema. Useful for mocking and creating APIs for front-end devs to consume in coding challenges.",
+                                        "tags": [
+                                            "api",
+                                            "json",
+                                            "schema",
+                                            "node",
+                                            "github",
+                                            "rest"
+                                        ]
+                                    },
+                                    {
+                                        "id": 3,
+                                        "title": "fastify",
+                                        "link": "https://www.fastify.io/",
+                                        "description": "Extremely fast and simple, low-overhead web framework for NodeJS. Supports HTTP2.",
+                                        "tags": [
+                                            "web",
+                                            "framework",
+                                            "node",
+                                            "http2",
+                                            "https",
+                                            "localhost"
+                                        ]
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error4xx"
+                                },
+                                "example": {
+                                    "statusCode": "401",
+                                    "message": "UNAUTHORIZED",
+                                    "errors": "INVALID TOKEN"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error5xx"
+                                },
+                                "example": {
+                                    "statusCode": 500,
+                                    "message": "INTERNAL SERVER ERROR"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "tags": [ "TOOLS" ],
+                "description": "add a new Tool",
+                "operationId": "addTool",
+                "parameters": [],
+                "security": [
+                    { "bearer": [] }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ToolPOST"
+                            },
+                            "example": {
+                                "title": "Notion",
+                                "link": "https://notion.so",
+                                "description": "All in one tool to organize teams and ideas. Write, plan, collaborate, and get organized.",
+                                "tags": [
+                                    "organization",
+                                    "planning",
+                                    "collaboration",
+                                    "writing",
+                                    "calendar"
+                                ]
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "content": {
+                            "application/json": {
+                                "schema": {
                                     "$ref": "#/components/schemas/ToolGET"
                                 },
                                 "example": {
                                     "id": 1,
-                                    "title": "Ederson",
-                                    "link": "http://github.com/nosered",
-                                    "description": "very useful tool",
-                                    "tags": []
+                                    "title": "Notion",
+                                    "link": "https://notion.so",
+                                    "description": "All in one tool to organize teams and ideas. Write, plan, collaborate, and get organized.",
+                                    "tags": [
+                                        "organization",
+                                        "planning",
+                                        "collaboration",
+                                        "writing",
+                                        "calendar"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error400"
+                                },
+                                "example": {
+                                    "statusCode": "400",
+                                    "message": "BAD REQUEST",
+                                    "errors": [
+                                        {
+                                            "value": "",
+                                            "msg": "Invalid value",
+                                            "param": "description",
+                                            "location": "body"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error4xx"
+                                },
+                                "example": {
+                                    "statusCode": "401",
+                                    "message": "UNAUTHORIZED",
+                                    "errors": "INVALID TOKEN"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error5xx"
+                                },
+                                "example": {
+                                    "statusCode": 500,
+                                    "message": "INTERNAL SERVER ERROR"
                                 }
                             }
                         }
@@ -240,25 +449,60 @@
                 "properties": {
                     "id": {
                         "type": "integer",
-                        "example": 1234
+                        "example": 1
                     },
                     "title": {
                         "type": "string",
-                        "example": "Ederson"
+                        "example": "fastify"
                     },
                     "link": {
                         "type": "string",
-                        "example": "Abreu"
+                        "example": "https://www.fastify.io/"
                     },
                     "description": {
                         "type": "string",
-                        "example": "edersonabreu@email.com"
+                        "example": "Extremely fast and simple, low-overhead web framework for NodeJS. Supports HTTP2."
                     },
                     "tags": {
                         "type": "array",
-                        "example": []
+                        "example": [
+                            "web",
+                            "framework",
+                            "node",
+                            "http2",
+                            "https",
+                            "localhost"
+                        ]
                     }
                 }
+            },
+            "ToolsGET": {
+                "type": "array",
+                "items": {
+                    "$ref": "#/components/schemas/ToolGET"
+                }
+            },
+            "ToolPOST": {
+                "type": "object",
+                "properties": {
+                    "title": {
+                        "type": "string",
+                        "example": "fastify"
+                    },
+                    "link": {
+                        "type": "string",
+                        "example": "https://www.fastify.io/"
+                    },
+                    "description": {
+                        "type": "string",
+                        "example": "Extremely fast and simple, low-overhead web framework for NodeJS. Supports HTTP2."
+                    },
+                    "tags": {
+                        "type": "array",
+                        "example": ["web", "framework", "node", "http2", "https", "localhost"]
+                    }
+                },
+                "required": ["title", "link", "description", "tags"]
             },
             "UserCredentials": {
                 "type": "object",
@@ -279,13 +523,41 @@
                 },
                 "required": [ "grant_type" ]
             },
-            "Error": {
+            "Error400": {
                 "type": "object",
                 "properties": {
+                    "statusCode": {
+                        "type": "integer"
+                    },
                     "message": {
                         "type": "string"
                     },
-                    "internal_code": {
+                    "errors": {
+                        "type": "array"
+                    }
+                }
+            },
+            "Error4xx": {
+                "type": "object",
+                "properties": {
+                    "statusCode": {
+                        "type": "integer"
+                    },
+                    "message": {
+                        "type": "string"
+                    },
+                    "errors": {
+                        "type": "string"
+                    }
+                }
+            },
+            "Error5xx": {
+                "type": "object",
+                "properties": {
+                    "statusCode": {
+                        "type": "integer"
+                    },
+                    "message": {
                         "type": "string"
                     }
                 }

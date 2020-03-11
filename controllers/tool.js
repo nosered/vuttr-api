@@ -19,7 +19,7 @@ exports.getTools = (request, response, next) => {
         params = { tags: { [Op.iLike]: `%${request.query.tags_like}%` } };
     }
     
-    Tool.findAll({ where: params })
+    Tool.findAll({ attributes: ['id', 'title', 'link', 'description', 'tags'], where: params })
     .then(tools => {
         for(tool of tools) {
             if(tool.tags) {
@@ -56,9 +56,12 @@ exports.postTools = (request, response, next) => {
         link: request.body.link,
         description: request.body.description,
         tags: tags,
-        // userId: request.tokenPayload.userId
+        userId: request.tokenPayload.userId
     })
     .then(tool => {
+        delete tool.dataValues.userId;
+        delete tool.dataValues.createdAt;
+        delete tool.dataValues.updatedAt;
         if(tool.tags) {
             const tags = tool.tags.split(',');
             const tagsList = [];
@@ -70,7 +73,7 @@ exports.postTools = (request, response, next) => {
         response.status(201).json(tool);
     })
     .catch(error => {
-        // next(error);
+        next(error);
         response.status(500).json({ statusCode: 500, message: 'INTERNAL SERVER ERROR' });
     });
 }
